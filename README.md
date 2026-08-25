@@ -13,3 +13,16 @@ npm run seed:users
 
 npm run start:dev
 ```
+
+## Что бы получить ключи:
+
+```
+Устанавливаем локально пакет brew install minio-mc
+
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc admin accesskey create local
+
+accessKeyId - это Access Key
+secretAccessKey - это Secret Key
+
+```

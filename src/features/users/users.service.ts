@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
@@ -21,13 +20,5 @@ export class UsersService {
 
   async findOne(id: number): Promise<User | null> {
     return this.usersRepository.findById(id);
-  }
-
-  async update(id: number, dto: UpdateUserDto): Promise<User | null> {
-    return this.usersRepository.update(id, dto);
-  }
-
-  async softDelete(id: number): Promise<boolean> {
-    return this.usersRepository.softDelete(id);
   }
 }

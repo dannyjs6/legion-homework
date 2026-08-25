@@ -61,24 +61,6 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async getMyProfile(userId: number) {
-    const user = await this.usersRepository.findById(userId);
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const userWithoutPassword = {
-      id: user.id,
-      login: user.login,
-      email: user.email,
-      age: user.age,
-      about: user.about,
-    };
-
-    return userWithoutPassword;
-  }
-
   async updatePassword(
     userId: number,
     dto: ChangePasswordDto,

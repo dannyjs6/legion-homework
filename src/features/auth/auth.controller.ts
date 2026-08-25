@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Patch,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -27,7 +19,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Log in and receive access and refresh tokens' })
+  @ApiOperation({ summary: 'Login and receive access and refresh tokens' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -41,13 +33,5 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     await this.authService.updatePassword(request.user.sub, dto);
-  }
-
-  @Get('profile/me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get the current user profile' })
-  getMyProfile(@Req() request: RequestWithUser) {
-    return this.authService.getMyProfile(request.user.sub);
   }
 }
