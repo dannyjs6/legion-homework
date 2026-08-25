@@ -107,6 +107,7 @@ export class UsersRepository {
     return result.rows[0] ?? null;
   }
 
+  // TODO: Add pagination with separate paginate method which also send meta data
   async findMostActiveUsers(
     dto: FindMostActiveUsersDto,
   ): Promise<User[] | null> {

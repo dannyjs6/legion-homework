@@ -5,7 +5,9 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
@@ -15,6 +17,7 @@ import { FindMostActiveUsersDto } from './dto/find-most-active-users';
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
+@UseInterceptors(CacheInterceptor)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
