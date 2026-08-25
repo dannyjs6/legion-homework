@@ -20,7 +20,7 @@ export class UsersRepository {
 
   async create(dto: CreateUserDto): Promise<User> {
     const result = await this.database.query<User>(
-      'INSERT INTO users (login, email, password, age, about) VALUES ($1, $2, $3, $4, $5) RETURNING id, login, email, password, age, about',
+      'INSERT INTO users (login, email, password, age, about) VALUES ($1, $2, $3, $4, $5) RETURNING id, login, email, age, about',
       [dto.login, dto.email, dto.password, dto.age, dto.about],
     );
 
