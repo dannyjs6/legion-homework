@@ -4,6 +4,7 @@ import { POSTGRESQL_POOL } from '../../providers/database/postgresql/postgresql.
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FindMostActiveUsersDto } from './dto/find-most-active-users';
 
 type FindUsersOptions = {
   limit?: number;
@@ -104,5 +105,44 @@ export class UsersRepository {
     );
 
     return result.rows[0] ?? null;
+  }
+
+  async findMostActiveUsers(
+    dto: FindMostActiveUsersDto,
+  ): Promise<User[] | null> {
+    const result = await this.database.query<User>(
+      `SELECT
+        u.id,
+        u.login,
+        u.email,
+        u.age,
+        u.about,
+        a.id AS avatar_id,
+        a.file_name,
+        a.created_at
+      FROM users u
+      JOIN (
+        SELECT DISTINCT ON (user_id)
+          id,
+          user_id,
+          file_name,
+          created_at
+        FROM avatars
+        WHERE deleted_at IS NULL
+        ORDER BY user_id, created_at DESC
+      ) a ON a.user_id = u.id
+      WHERE (
+        SELECT COUNT(*)
+        FROM avatars a2
+        WHERE a2.user_id = u.id
+        AND a2.deleted_at IS NULL
+      ) >= 2
+      AND u.about IS NOT NULL
+      AND u.age BETWEEN $1 AND $2
+      ORDER BY u.id;`,
+      [dto.minAge, dto.maxAge],
+    );
+
+    return result.rows;
   }
 }

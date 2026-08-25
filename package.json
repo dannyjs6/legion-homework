@@ -15,7 +15,7 @@
     "migration:create": "node-pg-migrate create --migrations-dir database/migrations",
     "migration:up": "node-pg-migrate up --migrations-dir database/migrations --envPath .env",
     "migration:down": "node-pg-migrate down --migrations-dir database/migrations --envPath .env",
-    "seed:users": "node database/seeds/users.seed.js",
+    "seed": "node database/seeds/seed.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

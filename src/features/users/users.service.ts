@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
+import { FindMostActiveUsersDto } from './dto/find-most-active-users';
 
 @Injectable()
 export class UsersService {
@@ -20,5 +21,9 @@ export class UsersService {
 
   async findOne(id: number): Promise<User | null> {
     return this.usersRepository.findById(id);
+  }
+
+  async findMostActiveUsers(dto: FindMostActiveUsersDto) {
+    return this.usersRepository.findMostActiveUsers(dto);
   }
 }

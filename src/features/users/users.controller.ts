@@ -1,8 +1,16 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FindMostActiveUsersDto } from './dto/find-most-active-users';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -18,9 +26,19 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('active')
+  @ApiOperation({
+    summary:
+      'Get most active users who have at least 2 avatar, about field and between age range',
+  })
+  findMostActiveUsers(@Query() dto: FindMostActiveUsersDto) {
+    return this.usersService.findMostActiveUsers(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get an active user by ID' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
   }
 }
