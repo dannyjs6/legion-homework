@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseIntPipe,
+  Post,
   Query,
   UseGuards,
   UseInterceptors,
@@ -13,22 +15,22 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FindMostActiveUsersDto } from './dto/find-most-active-users';
+import { TransferBalanceDto } from './dto/transfer-balance-payload.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
 @UseInterceptors(CacheInterceptor)
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Get active users' })
   findAll(@Query() query: FindUsersQueryDto) {
     return this.usersService.findAll(query);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('active')
   @ApiOperation({
     summary:
@@ -38,10 +40,15 @@ export class UsersController {
     return this.usersService.findMostActiveUsers(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get an active user by ID' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
+  }
+
+  @Post('transfer')
+  @ApiOperation({ summary: 'Get an active user by ID' })
+  transferBalance(@Body() dto: TransferBalanceDto) {
+    return this.usersService.transferBalance(dto);
   }
 }

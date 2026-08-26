@@ -20,7 +20,7 @@ import { UploadFilePayloadDto } from 'src/providers/files/s3/dto/upload-file-pay
 import type { IUploadedMulterFile } from 'src/providers/files/s3/interfaces/upload-file.interface';
 import { AvatarsService } from './avatars.service';
 import { User } from 'src/common/decorators/user.decorator';
-import type { JwtPayload } from 'src/features/auth/types/jwt-payload.type';
+import type { JwtPayload } from 'src/common/types/jwt-payload.type';
 
 @Controller('avatars')
 export class AvatarsController {

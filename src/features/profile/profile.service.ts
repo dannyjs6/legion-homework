@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersRepository } from '../users/users.repository';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
-import { User } from '../users/entities/user.entity';
+import { User } from '../../common/entities/user.entity';
 
 @Injectable()
 export class ProfileService {

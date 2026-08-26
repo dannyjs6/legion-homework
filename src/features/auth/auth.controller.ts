@@ -6,7 +6,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { User } from 'src/common/decorators/user.decorator';
-import type { JwtPayload } from './types/jwt-payload.type';
+import type { JwtPayload } from '../../common/types/jwt-payload.type';
 
 @ApiTags('auth')
 @Controller()

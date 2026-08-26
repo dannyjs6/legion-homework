@@ -124,25 +124,48 @@ async function seedUsers() {
 
     const passwordHash = await hash(process.env.DEFAULT_PASSWORD, 10);
 
+    // Give 15 random users a balance from 100 to 500.
+    const usersWithBalance = users.map((user) => [...user, 0]);
+
+    const randomIndexes = new Set();
+
+    while (randomIndexes.size < 15) {
+      randomIndexes.add(Math.floor(Math.random() * users.length));
+    }
+
+    for (const index of randomIndexes) {
+      usersWithBalance[index][4] = Math.floor(Math.random() * 401) + 100;
+    }
+
     const values = [];
 
-    const placeholders = users.map(([login, email, age, about], index) => {
-      const offset = index * 5;
+    const placeholders = usersWithBalance.map(
+      ([login, email, age, about, balance], index) => {
+        const offset = index * 6;
 
-      values.push(login, email, passwordHash, age, about);
+        values.push(login, email, passwordHash, age, about, balance);
 
-      return `(
-        $${offset + 1},
-        $${offset + 2},
-        $${offset + 3},
-        $${offset + 4},
-        $${offset + 5}
-      )`;
-    });
+        return `(
+          $${offset + 1},
+          $${offset + 2},
+          $${offset + 3},
+          $${offset + 4},
+          $${offset + 5},
+          $${offset + 6}
+        )`;
+      },
+    );
 
     const result = await client.query(
       `
-        INSERT INTO users (login, email, password, age, about)
+        INSERT INTO users (
+          login,
+          email,
+          password,
+          age,
+          about,
+          balance
+        )
         VALUES ${placeholders.join(', ')}
         ON CONFLICT (email) DO NOTHING
         RETURNING id
@@ -167,7 +190,6 @@ async function seedUsers() {
       const offset = index * 4;
 
       avatarValues.push(userId, 'avatars/sample.png');
-
       avatarValues.push(userId, 'avatars/sample.jpg');
 
       return [

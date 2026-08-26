@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { User } from './entities/user.entity';
+import { User } from '../../common/entities/user.entity';
 import { UsersRepository } from './users.repository';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { FindMostActiveUsersDto } from './dto/find-most-active-users';
+import { UserWithAvatar } from './dto/user-with-avatar.dto';
+import { TransferBalanceDto } from './dto/transfer-balance-payload.dto';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +25,13 @@ export class UsersService {
     return this.usersRepository.findById(id);
   }
 
-  async findMostActiveUsers(dto: FindMostActiveUsersDto) {
+  async findMostActiveUsers(
+    dto: FindMostActiveUsersDto,
+  ): Promise<UserWithAvatar[]> {
     return this.usersRepository.findMostActiveUsers(dto);
+  }
+
+  async transferBalance(dto: TransferBalanceDto) {
+    return this.usersRepository.transferBalance(dto);
   }
 }

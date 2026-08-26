@@ -2,9 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
 import { POSTGRESQL_POOL } from '../../providers/database/postgresql/postgresql.constants';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entities/user.entity';
+import { User } from '../../common/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FindMostActiveUsersDto } from './dto/find-most-active-users';
+import { UserWithAvatar } from './dto/user-with-avatar.dto';
+import { TransferBalanceDto } from './dto/transfer-balance-payload.dto';
 
 type FindUsersOptions = {
   limit?: number;
@@ -34,7 +36,7 @@ export class UsersRepository {
     if (options.login) {
       const result = await this.database.query<User>(
         `
-          SELECT id, login, email, age, about, deleted_at
+          SELECT id, login, email, age, about, balance, deleted_at
           FROM users
           WHERE login ILIKE $1 AND deleted_at IS NULL
           ORDER BY id
@@ -47,7 +49,7 @@ export class UsersRepository {
     }
 
     const result = await this.database.query<User>(
-      'SELECT id, login, email, age, about, deleted_at FROM users WHERE deleted_at IS NULL ORDER BY id LIMIT $1 OFFSET $2',
+      'SELECT id, login, email, age, about, balance, deleted_at FROM users WHERE deleted_at IS NULL ORDER BY id LIMIT $1 OFFSET $2',
       [options.limit, options.offset],
     );
 
@@ -108,8 +110,10 @@ export class UsersRepository {
   }
 
   // TODO: Add pagination with separate paginate method which also send meta data
-  async findMostActiveUsers(dto: FindMostActiveUsersDto) {
-    const result = await this.database.query<User>(
+  async findMostActiveUsers(
+    dto: FindMostActiveUsersDto,
+  ): Promise<UserWithAvatar[] | []> {
+    const result = await this.database.query<UserWithAvatar>(
       `SELECT
         u.id,
         u.login,
@@ -143,5 +147,74 @@ export class UsersRepository {
     );
 
     return result.rows;
+  }
+
+  async transferBalance(dto: TransferBalanceDto) {
+    const client = await this.database.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const sender = await client.query(
+        `
+        SELECT id, balance
+        FROM users
+        WHERE id = $1;
+      `,
+        [dto.senderId],
+      );
+
+      console.log('sender', sender, dto.senderId);
+
+      const recipient = await client.query(
+        `
+        SELECT id, balance
+        FROM users
+        WHERE id = $1
+      `,
+        [dto.recipientId],
+      );
+
+      if (sender.rows.length === 0) {
+        throw new Error('Sender not found');
+      }
+
+      if (recipient.rows.length === 0) {
+        throw new Error('Recipient not found');
+      }
+
+      if (sender.rows[0].balance < dto.amount) {
+        throw new Error('Insufficient balance');
+      }
+
+      await client.query(
+        `
+        UPDATE users
+        SET balance = balance - $1
+        WHERE id = $2
+      `,
+        [dto.amount, dto.senderId],
+      );
+
+      await client.query(
+        `
+        UPDATE users
+        SET balance = balance + $1
+        WHERE id = $2
+      `,
+        [dto.amount, dto.recipientId],
+      );
+
+      await client.query('COMMIT');
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }

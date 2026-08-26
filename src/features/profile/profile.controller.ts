@@ -10,7 +10,7 @@ import { ProfileService } from './profile.service';
 import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
-import type { JwtPayload } from 'src/features/auth/types/jwt-payload.type';
+import type { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { User } from 'src/common/decorators/user.decorator';
 
 @Controller('profile')

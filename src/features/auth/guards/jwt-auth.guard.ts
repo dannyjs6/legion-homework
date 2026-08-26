@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { RequestWithUser } from '../../../common/types/request-with-user.type';
-import type { JwtPayload } from '../types/jwt-payload.type';
+import type { JwtPayload } from '../../../common/types/jwt-payload.type';
 import { ConfigService } from '@nestjs/config/dist/config.service';
 
 @Injectable()
