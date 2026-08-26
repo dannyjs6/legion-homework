@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -10,12 +11,17 @@ import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from '../users/users.repository';
 import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import type { ConfigType } from '@nestjs/config';
+import { jwtConfig } from 'src/configs/jwt.config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly jwtService: JwtService,
+
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfigService: ConfigType<typeof jwtConfig>,
   ) {}
   async register(dto: RegisterDto) {
     const existingUser = await this.usersRepository.findByEmail(dto.email);
@@ -38,27 +44,34 @@ export class AuthService {
       about: dto.about,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = newUser;
-
-    return userWithoutPassword;
+    return newUser;
   }
 
   async login(dto: LoginDto) {
     const user = await this.usersRepository.findByEmail(dto.email);
 
     if (!user) {
-      throw new ConflictException(`User with email ${dto.email} not found`);
+      throw new ConflictException('Invalid email or password');
     }
 
     const isPasswordValid = await compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      throw new ConflictException(`Invalid email or password`);
+      throw new ConflictException('Invalid email or password');
     }
 
     const { accessToken, refreshToken } = await this.generateTokens(user);
     return { accessToken, refreshToken };
+  }
+
+  async getMyProfile(userId: number) {
+    const user = await this.usersRepository.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return user;
   }
 
   async updatePassword(
@@ -101,12 +114,12 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: '15m',
+        secret: this.jwtConfigService.accessSecret,
+        expiresIn: '1d',
       }),
 
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: this.jwtConfigService.refreshSecret,
         expiresIn: '7d',
       }),
     ]);

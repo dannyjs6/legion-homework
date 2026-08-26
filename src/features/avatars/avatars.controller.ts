@@ -9,18 +9,18 @@ import {
   ParseFilePipe,
   ParseIntPipe,
   Post,
-  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation } from '@nestjs/swagger';
-import type { RequestWithUser } from '../auth/types/request-with-user.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadFilePayloadDto } from 'src/providers/files/s3/dto/upload-file-payload.dto';
 import type { IUploadedMulterFile } from 'src/providers/files/s3/interfaces/upload-file.interface';
 import { AvatarsService } from './avatars.service';
+import { User } from 'src/common/decorators/user.decorator';
+import type { JwtPayload } from 'src/features/auth/types/jwt-payload.type';
 
 @Controller('avatars')
 export class AvatarsController {
@@ -30,7 +30,7 @@ export class AvatarsController {
   @Post('me/upload')
   @UseInterceptors(FileInterceptor('file'))
   uploadAvatarForUser(
-    @Req() request: RequestWithUser,
+    @User() user: JwtPayload,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -54,7 +54,7 @@ export class AvatarsController {
       file.originalname.split('.').at(-1) ??
       'png';
 
-    return this.avatarsService.uploadAvatar(request.user.sub, {
+    return this.avatarsService.uploadAvatar(user.sub, {
       file,
       folder: 'avatars',
       name: dto.name ? `${dto.name}.${extension}` : file.originalname,
@@ -71,7 +71,7 @@ export class AvatarsController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({ summary: 'Get active avatars for the current user' })
-  getUsersActiveAvatars(@Req() request: RequestWithUser) {
-    return this.avatarsService.getUsersActiveAvatars(request.user.sub);
+  getUsersActiveAvatars(@User() user: JwtPayload) {
+    return this.avatarsService.getUsersActiveAvatars(user.sub);
   }
 }

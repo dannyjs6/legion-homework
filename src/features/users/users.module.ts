@@ -16,7 +16,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const ttl = Number(configService.getOrThrow<string>('CACHE_TTL'));
-
         return {
           stores: [
             new Keyv({

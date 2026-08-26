@@ -1,18 +1,19 @@
-import { ConfigService } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 import { Pool } from 'pg';
 import { POSTGRESQL_POOL } from './postgresql.constants';
+import { postgresqlConfig } from 'src/configs/postgresql.config';
 
 export const postgresqlProviders = [
   {
     provide: POSTGRESQL_POOL,
-    inject: [ConfigService],
-    useFactory: async (config: ConfigService): Promise<Pool> => {
+    inject: [postgresqlConfig.KEY],
+    useFactory: async (config: ConfigType<typeof postgresqlConfig>) => {
       const pool = new Pool({
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        database: config.get<string>('DB_NAME', 'legion-homework'),
-        user: config.get<string>('DB_USER', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
       });
 
       await pool.query('SELECT 1');
