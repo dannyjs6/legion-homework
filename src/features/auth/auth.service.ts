@@ -9,7 +9,7 @@ import { hash, compare } from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UsersRepository } from '../users/users.repository';
-import { User } from '../users/entities/user.entity';
+import { User } from '../../common/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import type { ConfigType } from '@nestjs/config';
 import { jwtConfig } from 'src/configs/jwt.config';

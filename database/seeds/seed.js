@@ -1,3 +1,6 @@
+/**
+ * @typedef {{ id: number }} UserIdRow
+ */
 import { Pool } from 'pg';
 import { hash } from 'bcrypt';
 import 'dotenv/config';
@@ -114,28 +117,55 @@ async function seedUsers() {
     connectionString: getConnectionString(),
   });
 
+  const client = await pool.connect();
+
   try {
+    await client.query('BEGIN');
+
     const passwordHash = await hash(process.env.DEFAULT_PASSWORD, 10);
+
+    // Give 15 random users a balance from 100 to 500.
+    const usersWithBalance = users.map((user) => [...user, 0]);
+
+    const randomIndexes = new Set();
+
+    while (randomIndexes.size < 15) {
+      randomIndexes.add(Math.floor(Math.random() * users.length));
+    }
+
+    for (const index of randomIndexes) {
+      usersWithBalance[index][4] = Math.floor(Math.random() * 401) + 100;
+    }
 
     const values = [];
 
-    const placeholders = users.map(([login, email, age, about], index) => {
-      const offset = index * 5;
+    const placeholders = usersWithBalance.map(
+      ([login, email, age, about, balance], index) => {
+        const offset = index * 6;
 
-      values.push(login, email, passwordHash, age, about);
+        values.push(login, email, passwordHash, age, about, balance);
 
-      return `(
+        return `(
           $${offset + 1},
           $${offset + 2},
           $${offset + 3},
           $${offset + 4},
-          $${offset + 5}
+          $${offset + 5},
+          $${offset + 6}
         )`;
-    });
+      },
+    );
 
-    const result = await pool.query(
+    const result = await client.query(
       `
-        INSERT INTO users (login, email, password, age, about)
+        INSERT INTO users (
+          login,
+          email,
+          password,
+          age,
+          about,
+          balance
+        )
         VALUES ${placeholders.join(', ')}
         ON CONFLICT (email) DO NOTHING
         RETURNING id
@@ -143,8 +173,48 @@ async function seedUsers() {
       values,
     );
 
+    /** @type {import('pg').QueryResult<UserIdRow>} */
+    const randomUsersResult = await client.query(`
+      SELECT id
+      FROM users
+      ORDER BY RANDOM()
+      LIMIT 10
+    `);
+
+    const randomUserIds = randomUsersResult.rows.map((row) => row.id);
+
+    // 2 avatars for each selected user
+    const avatarValues = [];
+
+    const avatarPlaceholders = randomUserIds.flatMap((userId, index) => {
+      const offset = index * 4;
+
+      avatarValues.push(userId, 'avatars/sample.png');
+      avatarValues.push(userId, 'avatars/sample.jpg');
+
+      return [
+        `($${offset + 1}, $${offset + 2})`,
+        `($${offset + 3}, $${offset + 4})`,
+      ];
+    });
+
+    await client.query(
+      `
+        INSERT INTO avatars (user_id, file_name)
+        VALUES ${avatarPlaceholders.join(', ')}
+      `,
+      avatarValues,
+    );
+
+    await client.query('COMMIT');
+
     console.log(`Seeded ${result.rowCount ?? 0} users.`);
+    console.log(`Seeded avatars for ${randomUserIds.length} users.`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
   } finally {
+    client.release();
     await pool.end();
   }
 }
