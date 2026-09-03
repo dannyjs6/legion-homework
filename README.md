@@ -9,12 +9,12 @@ npm i
 
 npm run migration:up
 
-npm run seed:users
+npm run seed
 
 npm run start:dev
 ```
 
-## Что бы получить ключи:
+## Что бы получить ключи minio:
 
 ```
 Устанавливаем локально пакет brew install minio-mc

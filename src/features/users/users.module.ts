@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
     JwtModule.register({}),
     CacheModule.registerAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const ttl = Number(configService.getOrThrow<string>('CACHE_TTL'));
         return {
           stores: [
@@ -31,6 +31,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
   ],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, JwtAuthGuard],
-  exports: [UsersRepository],
+  exports: [UsersRepository, UsersService],
 })
 export class UsersModule {}

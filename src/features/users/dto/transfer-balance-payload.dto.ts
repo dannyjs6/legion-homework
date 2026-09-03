@@ -1,13 +1,16 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, IsNumber, IsPositive } from 'class-validator';
 
 export class TransferBalanceDto {
-  @IsString()
-  @IsNotEmpty()
-  senderId: string;
+  @Type(() => Number)
+  @IsInt()
+  @IsPositive()
+  senderId: number;
 
-  @IsString()
-  @IsNotEmpty()
-  recipientId: string;
+  @Type(() => Number)
+  @IsInt()
+  @IsPositive()
+  recipientId: number;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()

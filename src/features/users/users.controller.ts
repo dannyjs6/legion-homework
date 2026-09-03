@@ -16,6 +16,7 @@ import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FindMostActiveUsersDto } from './dto/find-most-active-users';
 import { TransferBalanceDto } from './dto/transfer-balance-payload.dto';
+import { AddBalanceToAllDto } from './dto/add-balance-to-all.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -47,8 +48,14 @@ export class UsersController {
   }
 
   @Post('transfer')
-  @ApiOperation({ summary: 'Get an active user by ID' })
+  @ApiOperation({ summary: 'Transfer balance between users' })
   transferBalance(@Body() dto: TransferBalanceDto) {
     return this.usersService.transferBalance(dto);
+  }
+
+  @Post('balance/add-all')
+  @ApiOperation({ summary: 'Add balance to all users' })
+  addBalanceToAll(@Body() dto: AddBalanceToAllDto) {
+    return this.usersService.addBalanceToAll(dto);
   }
 }

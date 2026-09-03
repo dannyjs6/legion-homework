@@ -1,4 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Pool } from 'pg';
 import { POSTGRESQL_POOL } from '../../providers/database/postgresql/postgresql.constants';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +22,8 @@ type FindUsersOptions = {
 
 @Injectable()
 export class UsersRepository {
+  private readonly logger = new Logger(UsersRepository.name);
+
   constructor(
     @Inject(POSTGRESQL_POOL)
     private readonly database: Pool,
@@ -151,40 +159,44 @@ export class UsersRepository {
 
   async transferBalance(dto: TransferBalanceDto) {
     const client = await this.database.connect();
+    const { senderId, recipientId } = dto;
 
     try {
+      this.logger.debug(
+        `Starting balance transfer: senderId=${senderId}, recipientId=${recipientId}, amount=${dto.amount}`,
+      );
       await client.query('BEGIN');
 
-      const sender = await client.query(
+      if (senderId === recipientId) {
+        throw new BadRequestException(
+          'Sender and recipient must be different users',
+        );
+      }
+
+      const users = await client.query<{ id: number; balance: string }>(
         `
         SELECT id, balance
         FROM users
-        WHERE id = $1;
+        WHERE id IN ($1, $2)
+        ORDER BY id
+        FOR UPDATE
       `,
-        [dto.senderId],
+        [senderId, recipientId],
       );
 
-      console.log('sender', sender, dto.senderId);
+      const sender = users.rows.find((user) => user.id === senderId);
+      const recipient = users.rows.find((user) => user.id === recipientId);
 
-      const recipient = await client.query(
-        `
-        SELECT id, balance
-        FROM users
-        WHERE id = $1
-      `,
-        [dto.recipientId],
-      );
-
-      if (sender.rows.length === 0) {
-        throw new Error('Sender not found');
+      if (!sender) {
+        throw new NotFoundException('Sender not found');
       }
 
-      if (recipient.rows.length === 0) {
-        throw new Error('Recipient not found');
+      if (!recipient) {
+        throw new NotFoundException('Recipient not found');
       }
 
-      if (sender.rows[0].balance < dto.amount) {
-        throw new Error('Insufficient balance');
+      if (Number(sender.balance) < dto.amount) {
+        throw new BadRequestException('Insufficient balance');
       }
 
       await client.query(
@@ -193,7 +205,7 @@ export class UsersRepository {
         SET balance = balance - $1
         WHERE id = $2
       `,
-        [dto.amount, dto.senderId],
+        [dto.amount, senderId],
       );
 
       await client.query(
@@ -202,19 +214,102 @@ export class UsersRepository {
         SET balance = balance + $1
         WHERE id = $2
       `,
-        [dto.amount, dto.recipientId],
+        [dto.amount, recipientId],
       );
 
       await client.query('COMMIT');
+
+      this.logger.log(
+        `Balance transfer committed: senderId=${senderId}, recipientId=${recipientId}, amount=${dto.amount}`,
+      );
 
       return {
         success: true,
       };
     } catch (error) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        const rollbackMessage =
+          rollbackError instanceof Error
+            ? rollbackError.message
+            : String(rollbackError);
+        const rollbackStack =
+          rollbackError instanceof Error ? rollbackError.stack : undefined;
+
+        this.logger.error(
+          `Balance transfer rollback failed: senderId=${senderId}, recipientId=${recipientId}, reason=${rollbackMessage}`,
+          rollbackStack,
+        );
+      }
+
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      const isBusinessError =
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException;
+
+      if (isBusinessError) {
+        this.logger.warn(
+          `Balance transfer rolled back: senderId=${senderId}, recipientId=${recipientId}, amount=${dto.amount}, reason=${message}`,
+        );
+      } else {
+        this.logger.error(
+          `Balance transfer failed and was rolled back: senderId=${senderId}, recipientId=${recipientId}, amount=${dto.amount}, reason=${message}`,
+          stack,
+        );
+      }
+
       throw error;
     } finally {
       client.release();
+    }
+  }
+
+  async resetAllBalances(): Promise<void> {
+    this.logger.debug('Starting balance reset for all users');
+
+    try {
+      const result = await this.database.query(
+        'UPDATE users SET balance = 0 WHERE deleted_at IS NULL',
+      );
+
+      this.logger.log(
+        `Balance reset committed: updatedUsers=${result.rowCount ?? 0}`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(`Balance reset failed: ${message}`, stack);
+      throw error;
+    }
+  }
+
+  async addBalanceToAll(amount: number): Promise<number> {
+    this.logger.debug(`Starting balance replenishment: amount=${amount}`);
+
+    try {
+      const result = await this.database.query(
+        'UPDATE users SET balance = balance + $1 WHERE deleted_at IS NULL',
+        [amount],
+      );
+      const updatedUsers = result.rowCount ?? 0;
+
+      this.logger.log(
+        `Balance replenishment committed: amount=${amount}, updatedUsers=${updatedUsers}`,
+      );
+
+      return updatedUsers;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(
+        `Balance replenishment failed: amount=${amount}, reason=${message}`,
+        stack,
+      );
+      throw error;
     }
   }
 }
