@@ -2,6 +2,8 @@
 import * as AWS from '@aws-sdk/client-s3';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 
 import { IFileService } from '../files.adapter';
 import { S3Lib } from './constants/do-spaces-service-lib.constant';
@@ -26,8 +28,8 @@ export class S3Service extends IFileService {
   }
 
   async uploadFile(dto: UploadFilePayloadDto): Promise<UploadFileResultDto> {
-    const { folder, file, name } = dto;
-    const path = `${folder}/${name}`;
+    const { folder, file } = dto;
+    const path = this.buildObjectPath(folder, file);
 
     this.logger.log('📁 Beginning of uploading file to bucket');
 
@@ -53,6 +55,29 @@ export class S3Service extends IFileService {
         },
       );
     });
+  }
+
+  private buildObjectPath(
+    folder: string | undefined,
+    file: UploadFilePayloadDto['file'],
+  ): string {
+    const normalizedFolder = folder?.replace(/^\/+|\/+$/g, '') || 'files';
+    const extension =
+      extname(file.originalname).toLowerCase() ||
+      this.getExtensionByMimeType(file.mimetype);
+
+    return `${normalizedFolder}/${randomUUID()}${extension}`;
+  }
+
+  private getExtensionByMimeType(mimeType?: string): string {
+    switch (mimeType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      default:
+        return '';
+    }
   }
 
   async removeFile(dto: RemoveFilePayloadDto): Promise<void> {

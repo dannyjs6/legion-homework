@@ -1,11 +1,6 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { IFileService } from 'src/providers/files/files.adapter';
-import { UploadFilePayloadDto } from 'src/providers/files/s3/dto/upload-file-payload.dto';
-import { UsersRepository } from '../users/users.repository';
+import type { IUploadedMulterFile } from 'src/providers/files/s3/interfaces/upload-file.interface';
 import { AvatarsRepository } from './avatars.repository';
 import { Avatar } from './entities/avatar.entity';
 
@@ -13,28 +8,17 @@ import { Avatar } from './entities/avatar.entity';
 export class AvatarsService {
   constructor(
     private readonly avatarsRepository: AvatarsRepository,
-    private readonly usersRepository: UsersRepository,
     private readonly fileService: IFileService,
   ) {}
 
   async uploadAvatar(
     userId: number,
-    dto: UploadFilePayloadDto,
-  ): Promise<Avatar | null> {
-    const user = await this.usersRepository.findById(userId);
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const activeAvatarsCount =
-      await this.avatarsRepository.countActiveByUserId(userId);
-
-    if (activeAvatarsCount >= 5) {
-      throw new ConflictException('Maximum number of avatars reached');
-    }
-
-    const uploadedFile = await this.fileService.uploadFile(dto);
+    file: IUploadedMulterFile,
+  ): Promise<Avatar> {
+    const uploadedFile = await this.fileService.uploadFile({
+      file,
+      folder: 'avatars',
+    });
 
     return this.avatarsRepository.create(userId, uploadedFile.path);
   }
@@ -45,7 +29,7 @@ export class AvatarsService {
       id,
     );
     if (!isDeleted) {
-      throw new UnauthorizedException('Avatar not found');
+      throw new NotFoundException('Avatar not found');
     }
     return true;
   }

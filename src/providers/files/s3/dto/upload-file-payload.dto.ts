@@ -11,12 +11,12 @@ export class UploadFilePayloadDto {
   })
   @IsString()
   @IsOptional()
-  readonly folder: string;
+  readonly folder?: string;
 
   @ApiProperty({
     example: 'file-name',
   })
   @IsString()
   @IsOptional()
-  readonly name: string;
+  readonly name?: string;
 }
