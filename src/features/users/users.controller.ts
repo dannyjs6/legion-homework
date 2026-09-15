@@ -1,54 +1,61 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
-  Patch,
+  Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FindMostActiveUsersDto } from './dto/find-most-active-users';
+import { TransferBalanceDto } from './dto/transfer-balance-payload.dto';
+import { AddBalanceToAllDto } from './dto/add-balance-to-all.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
+@UseInterceptors(CacheInterceptor)
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Get active users' })
   findAll(@Query() query: FindUsersQueryDto) {
     return this.usersService.findAll(query);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Get('active')
+  @ApiOperation({
+    summary:
+      'Get most active users who have at least 2 avatar, about field and between age range',
+  })
+  findMostActiveUsers(@Query() dto: FindMostActiveUsersDto) {
+    return this.usersService.findMostActiveUsers(dto);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get an active user by ID' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update an active user' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.usersService.update(id, updateUserDto);
+  @Post('transfer')
+  @ApiOperation({ summary: 'Transfer balance between users' })
+  transferBalance(@Body() dto: TransferBalanceDto) {
+    return this.usersService.transferBalance(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Delete(':id')
-  @ApiOperation({ summary: 'Soft-delete a user' })
-  softDelete(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.softDelete(id);
+  @Post('balance/add-all')
+  @ApiOperation({ summary: 'Add balance to all users' })
+  addBalanceToAll(@Body() dto: AddBalanceToAllDto) {
+    return this.usersService.addBalanceToAll(dto);
   }
 }

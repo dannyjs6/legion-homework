@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -6,7 +6,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { User } from 'src/common/decorators/user.decorator';
-import type { JwtPayload } from './types/jwt-payload.type';
+import type { JwtPayload } from '../../common/types/jwt-payload.type';
 
 @ApiTags('auth')
 @Controller()
@@ -20,7 +20,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Log in and receive access and refresh tokens' })
+  @ApiOperation({ summary: 'Login and receive access and refresh tokens' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -34,13 +34,5 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     await this.authService.updatePassword(user.sub, dto);
-  }
-
-  @Get('profile/me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get the current user profile' })
-  getMyProfile(@User() user: JwtPayload) {
-    return this.authService.getMyProfile(user.sub);
   }
 }
