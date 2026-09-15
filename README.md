@@ -11,7 +11,7 @@ npm run migration:up
 
 npm run seed
 
-npm run start:dev
+npm run dev
 ```
 
 ## Что бы получить ключи minio:

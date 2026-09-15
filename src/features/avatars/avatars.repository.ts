@@ -19,10 +19,10 @@ export class AvatarsRepository {
     return result.rows[0] ?? null;
   }
 
-  async softDelete(id: number): Promise<boolean> {
+  async softDeleteByUserId(userId: number, id: number): Promise<boolean> {
     const result = await this.database.query(
-      'UPDATE avatars SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
-      [id],
+      'UPDATE avatars SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+      [id, userId],
     );
 
     return (result.rowCount ?? 0) > 0;

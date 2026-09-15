@@ -64,8 +64,11 @@ export class AvatarsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id/delete')
   @ApiOperation({ summary: 'Delete an avatar by ID' })
-  deleteAvatar(@Param('id', ParseIntPipe) id: number) {
-    return this.avatarsService.deleteAvatar(id);
+  deleteAvatar(
+    @User() user: JwtPayload,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.avatarsService.deleteAvatar(user.sub, id);
   }
 
   @UseGuards(JwtAuthGuard)

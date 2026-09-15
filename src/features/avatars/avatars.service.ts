@@ -39,8 +39,15 @@ export class AvatarsService {
     return this.avatarsRepository.create(userId, uploadedFile.path);
   }
 
-  async deleteAvatar(id: number): Promise<boolean> {
-    return this.avatarsRepository.softDelete(id);
+  async deleteAvatar(userId: number, id: number): Promise<boolean> {
+    const isDeleted = await this.avatarsRepository.softDeleteByUserId(
+      userId,
+      id,
+    );
+    if (!isDeleted) {
+      throw new UnauthorizedException('Avatar not found');
+    }
+    return true;
   }
 
   async getUsersActiveAvatars(userId: number): Promise<Avatar[] | null> {
